@@ -11,64 +11,63 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Flutter Persistence Techniques'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Flutter Persistence'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         children: [
           _buildCard(
             context,
             title: 'SharedPreferences',
-            description: 'Store simple key-value pairs',
-            icon: Icons.settings,
-            color: Colors.blue,
+            description: 'Simple key-value pairs storage',
+            icon: Icons.settings_rounded,
+            color: const Color(0xFF2563EB), // Blue
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const SharedPreferencesScreen(),
+                builder: (context) => const SharedPreferencesScreen(color: Color(0xFF2563EB)),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           _buildCard(
             context,
             title: 'Hive',
-            description: 'Fast NoSQL database',
-            icon: Icons.storage,
-            color: Colors.orange,
+            description: 'High-performance NoSQL database',
+            icon: Icons.storage_rounded,
+            color: const Color(0xFFF97316), // Orange
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const HiveScreen(),
+                builder: (context) => const HiveScreen(color: Color(0xFFF97316)),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           _buildCard(
             context,
             title: 'SQLite',
-            description: 'Relational database',
-            icon: Icons.dataset,
-            color: Colors.green,
+            description: 'Robust relational database',
+            icon: Icons.table_chart_rounded,
+            color: const Color(0xFF0D9488), // Teal
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const SQLiteScreen(),
+                builder: (context) => const SQLiteScreen(color: Color(0xFF0D9488)),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           _buildCard(
             context,
             title: 'File Storage',
-            description: 'Save files to device',
-            icon: Icons.folder,
-            color: Colors.purple,
+            description: 'Direct file system access',
+            icon: Icons.folder_rounded,
+            color: const Color(0xFF0891B2), // Cyan
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const FileStorageScreen(),
+                builder: (context) => const FileStorageScreen(color: Color(0xFF0891B2)),
               ),
             ),
           ),
@@ -85,24 +84,31 @@ class HomeScreen extends StatelessWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Card(
-      elevation: 4,
+      elevation: 0,
+      color: color,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(icon, color: color, size: 32),
+                child: Icon(icon, color: Colors.white, size: 32),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,22 +116,26 @@ class HomeScreen extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 18,
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
+                        fontSize: 18,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       description,
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: Colors.white.withOpacity(0.8),
                         fontSize: 14,
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, color: Colors.grey[400]),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Colors.white,
+              ),
             ],
           ),
         ),

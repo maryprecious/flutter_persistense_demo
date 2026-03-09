@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/theme_service.dart';
 
 class SharedPreferencesScreen extends StatefulWidget {
-  const SharedPreferencesScreen({super.key});
+  final Color color;
+  const SharedPreferencesScreen({super.key, required this.color});
 
   @override
   State<SharedPreferencesScreen> createState() =>
@@ -12,129 +14,173 @@ class SharedPreferencesScreen extends StatefulWidget {
 class _SharedPreferencesScreenState extends State<SharedPreferencesScreen> {
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
+  final _themeService = ThemeService();
   String _savedName = '';
   int _savedAge = 0;
-  bool _isDarkMode = false;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _loadName();
   }
 
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _savedName = prefs.getString('name') ?? '';
-      _savedAge = prefs.getInt('age') ?? 0;
-      _isDarkMode = prefs.getBool('darkMode') ?? false;
+      _savedName = prefs.getString('user_name') ?? 'Not set';
+      _savedAge = prefs.getInt('user_age') ?? 0;
     });
+  }
+
+  Future<void> _loadName() async {
+    await _loadData();
   }
 
   Future<void> _saveData() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('name', _nameController.text);
-    await prefs.setInt('age', int.tryParse(_ageController.text) ?? 0);
-    await prefs.setBool('darkMode', _isDarkMode);
-    _loadData();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Data saved successfully!')),
-      );
+    if (_nameController.text.isNotEmpty) {
+      await prefs.setString('user_name', _nameController.text);
     }
-  }
-
-  Future<void> _clearData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    if (_ageController.text.isNotEmpty) {
+      await prefs.setInt('user_age', int.tryParse(_ageController.text) ?? 0);
+    }
     _nameController.clear();
     _ageController.clear();
     _loadData();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Data cleared!')),
+        SnackBar(
+          content: const Text('Data saved!'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('SharedPreferences'),
-        backgroundColor: Colors.blue,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Store Simple Data',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _ageController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Age',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SwitchListTile(
-              title: const Text('Dark Mode'),
-              value: _isDarkMode,
-              onChanged: (value) {
-                setState(() {
-                  _isDarkMode = value;
-                });
-              },
-            ),
-            const SizedBox(height: 20),
-            Row(
+    final theme = Theme.of(context);
+    final appBarColor = widget.color ?? theme.colorScheme.primary;
+
+    return ListenableBuilder(
+      listenable: _themeService,
+      builder: (context, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('SharedPreferences'),
+            backgroundColor: widget.color,
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _saveData,
-                    child: const Text('Save Data'),
+                Text(
+                  'User Preferences',
+                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Settings are persisted locally using key-value pairs.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _clearData,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
+                const SizedBox(height: 32),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        SwitchListTile(
+                          title: const Text('Dark Mode', style: TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: const Text('Toggle app-wide theme preference'),
+                          value: _themeService.isDarkMode,
+                          activeColor: appBarColor,
+                          onChanged: (bool value) {
+                            _themeService.toggleTheme(value);
+                          },
+                        ),
+                        const Divider(height: 32),
+                        TextField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            hintText: 'Enter your name',
+                            prefixIcon: Icon(Icons.person_rounded, color: appBarColor),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _ageController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: 'Enter your age',
+                            prefixIcon: Icon(Icons.cake_rounded, color: appBarColor),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 54,
+                          child: ElevatedButton(
+                            onPressed: _saveData,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: appBarColor,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: const Text('Save Data', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
                     ),
-                    child: const Text('Clear Data'),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: appBarColor.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: appBarColor.withOpacity(0.1)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline, color: appBarColor, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Stored Values',
+                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 32),
+                      _buildDataRow('Name', _savedName, theme),
+                      const SizedBox(height: 12),
+                      _buildDataRow('Age', _savedAge == 0 ? 'Not set' : _savedAge.toString(), theme),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 30),
-            const Divider(),
-            const SizedBox(height: 10),
-            const Text(
-              'Saved Data:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text('Name: $_savedName'),
-            Text('Age: $_savedAge'),
-            Text('Dark Mode: ${_isDarkMode ? "Enabled" : "Disabled"}'),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDataRow(String label, String value, ThemeData theme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6))),
+        Text(value, style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600)),
+      ],
     );
   }
 

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/file_storage_service.dart';
 
 class FileStorageScreen extends StatefulWidget {
-  const FileStorageScreen({super.key});
+  final Color color;
+  const FileStorageScreen({super.key, required this.color});
 
   @override
   State<FileStorageScreen> createState() => _FileStorageScreenState();
@@ -40,7 +41,11 @@ class _FileStorageScreenState extends State<FileStorageScreen> {
       _loadFiles();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('File saved!')),
+          SnackBar(
+            content: const Text('File saved!'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
         );
       }
     }
@@ -52,12 +57,22 @@ class _FileStorageScreenState extends State<FileStorageScreen> {
       _selectedFileContent = content;
     });
     if (mounted) {
+      final theme = Theme.of(context);
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text(filename),
-          content: SingleChildScrollView(
-            child: Text(content),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(filename, style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: Container(
+            width: double.maxFinite,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: SingleChildScrollView(
+              child: Text(content, style: theme.textTheme.bodyMedium),
+            ),
           ),
           actions: [
             TextButton(
@@ -75,71 +90,134 @@ class _FileStorageScreenState extends State<FileStorageScreen> {
     _loadFiles();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('File deleted!')),
+        SnackBar(
+          content: const Text('File deleted!'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final appBarColor = widget.color ?? theme.colorScheme.primary;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('File Storage'),
-        backgroundColor: Colors.purple,
+        backgroundColor: widget.color,
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  'FileSystem Access',
+                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Read and write files directly to the device storage using path_provider.',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6)),
+                ),
+                const SizedBox(height: 24),
                 TextField(
                   controller: _filenameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Filename (e.g., mydoc.txt)',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    hintText: 'Filename (e.g., notes.txt)',
+                    prefixIcon: Icon(Icons.description_rounded, color: appBarColor),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 TextField(
                   controller: _contentController,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    labelText: 'Content',
-                    border: OutlineInputBorder(),
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'File Content',
+                    prefixIcon: Icon(Icons.edit_note_rounded, color: appBarColor),
+                    alignLabelWithHint: true,
                   ),
                 ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: _saveFile,
-                  child: const Text('Save File'),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton.icon(
+                    onPressed: _saveFile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: appBarColor,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    icon: const Icon(Icons.save_rounded, size: 24),
+                    label: const Text('Write to File', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
                 ),
               ],
             ),
           ),
-          const Divider(),
+          const Divider(height: 1),
           Expanded(
             child: _files.isEmpty
-                ? const Center(child: Text('No files yet. Create one above!'))
-                : ListView.builder(
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.folder_copy_rounded, size: 64, color: theme.dividerColor),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No files found',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
                     itemCount: _files.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final filename = _files[index];
-                      return ListTile(
-                        leading: const Icon(Icons.insert_drive_file),
-                        title: Text(filename),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.visibility),
-                              onPressed: () => _readFile(filename),
+                      return Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(color: theme.dividerColor.withOpacity(0.1)),
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: appBarColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteFile(filename),
-                            ),
-                          ],
+                            child: Icon(Icons.insert_drive_file_rounded, color: appBarColor),
+                          ),
+                          title: Text(
+                            filename,
+                            style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.visibility_outlined, color: Colors.blueAccent),
+                                onPressed: () => _readFile(filename),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                                onPressed: () => _deleteFile(filename),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
